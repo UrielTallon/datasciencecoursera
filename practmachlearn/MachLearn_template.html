@@ -160,11 +160,8 @@ $(document).ready(function () {
 <p>The class A corresponds to the specific execution of the exercise while the other 4 classes correspond to common mistakes. We will try to build a robust predction model that will predict the class of 20 different provided test cases.</p>
 <p>The following libraries will be loaded:</p>
 <ul>
-<li><p><strong>ggplot2:</strong> for plotting.</p></li>
 <li><p><strong>knitr:</strong> for fancy tables.</p></li>
-<li><p><strong>dplyr:</strong> for dataframe manipulation.</p></li>
 <li><p><strong>caret &amp; rpart:</strong> for data partition, model training and decision trees.</p></li>
-<li><p><strong>rattle &amp; rpart.plot:</strong> for decision trees plotting.</p></li>
 </ul>
 </div>
 <div id="data-loading-training" class="section level2">
@@ -2169,95 +2166,18 @@ testing &lt;- testing[, c(feats)]</code></pre>
 pred.bas &lt;- predict(fit.bas, validating[, feats])
 conf.bas &lt;- confusionMatrix(validating$classe, pred.bas)</code></pre>
 <p>The default model uses bootstrap with 25 repetitions. The results are:</p>
-<table>
-<thead>
-<tr class="header">
-<th align="right">cp</th>
-<th align="right">Accuracy</th>
-<th align="right">Kappa</th>
-<th align="right">AccuracySD</th>
-<th align="right">KappaSD</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">0.0336894</td>
-<td align="right">0.6438081</td>
-<td align="right">0.5488086</td>
-<td align="right">0.0526564</td>
-<td align="right">0.0658038</td>
-</tr>
-<tr class="even">
-<td align="right">0.0344163</td>
-<td align="right">0.6278765</td>
-<td align="right">0.5256515</td>
-<td align="right">0.0756501</td>
-<td align="right">0.1056824</td>
-</tr>
-<tr class="odd">
-<td align="right">0.1141077</td>
-<td align="right">0.3262640</td>
-<td align="right">0.0636690</td>
-<td align="right">0.0423639</td>
-<td align="right">0.0625045</td>
-</tr>
-</tbody>
-</table>
+<pre><code>##           cp  Accuracy      Kappa AccuracySD    KappaSD
+## 1 0.03368936 0.6438081 0.54880856 0.05265641 0.06580384
+## 2 0.03441626 0.6278765 0.52565154 0.07565012 0.10568242
+## 3 0.11410770 0.3262640 0.06366904 0.04236393 0.06250448</code></pre>
 <p>The selected model is the one with the complexity parameter of 0.034, with an accuracy on the training set of 0.644. The model accuracy on the validating set is 0.63, which is not bad for a first try. A quick look on the confusion matrix can give an idea of the different mismatch:</p>
-<table>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="right">A</th>
-<th align="right">B</th>
-<th align="right">C</th>
-<th align="right">D</th>
-<th align="right">E</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">A</td>
-<td align="right">842</td>
-<td align="right">67</td>
-<td align="right">59</td>
-<td align="right">146</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td align="left">B</td>
-<td align="right">193</td>
-<td align="right">322</td>
-<td align="right">123</td>
-<td align="right">121</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">C</td>
-<td align="right">11</td>
-<td align="right">7</td>
-<td align="right">381</td>
-<td align="right">285</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">D</td>
-<td align="right">40</td>
-<td align="right">0</td>
-<td align="right">21</td>
-<td align="right">582</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">E</td>
-<td align="right">4</td>
-<td align="right">0</td>
-<td align="right">41</td>
-<td align="right">339</td>
-<td align="right">337</td>
-</tr>
-</tbody>
-</table>
+<pre><code>##           Reference
+## Prediction   A   B   C   D   E
+##          A 842  67  59 146   2
+##          B 193 322 123 121   0
+##          C  11   7 381 285   0
+##          D  40   0  21 582   0
+##          E   4   0  41 339 337</code></pre>
 <p>There are a few mismatche in class A and C. B and E are predicted with little inaccuracy. On the other hand, class D is really messy.</p>
 </div>
 <div id="b.-principal-component-analysis" class="section level3">
@@ -2270,96 +2190,19 @@ fit.pca &lt;- train(classe ~ . , method = &quot;rpart&quot;, data = pred.train)
 pred.pca &lt;- predict(fit.pca, pred.test)
 conf.pca &lt;- confusionMatrix(validating$classe, pred.pca)</code></pre>
 <p>The PCA gives 13 components required to capture 80% of the variance. The model fitting still uses bootstrap with 25 repetitions. The results are:</p>
-<table>
-<thead>
-<tr class="header">
-<th align="right">cp</th>
-<th align="right">Accuracy</th>
-<th align="right">Kappa</th>
-<th align="right">AccuracySD</th>
-<th align="right">KappaSD</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">0.0221851</td>
-<td align="right">0.5100774</td>
-<td align="right">0.3559937</td>
-<td align="right">0.1455169</td>
-<td align="right">0.2292029</td>
-</tr>
-<tr class="even">
-<td align="right">0.0228749</td>
-<td align="right">0.5047779</td>
-<td align="right">0.3494546</td>
-<td align="right">0.1425280</td>
-<td align="right">0.2254135</td>
-</tr>
-<tr class="odd">
-<td align="right">0.0257677</td>
-<td align="right">0.4016407</td>
-<td align="right">0.1936239</td>
-<td align="right">0.1382167</td>
-<td align="right">0.2254606</td>
-</tr>
-</tbody>
-</table>
+<pre><code>##           cp  Accuracy     Kappa AccuracySD   KappaSD
+## 1 0.02218514 0.5100774 0.3559937  0.1455169 0.2292029
+## 2 0.02287494 0.5047779 0.3494546  0.1425280 0.2254135
+## 3 0.02576769 0.4016407 0.1936239  0.1382167 0.2254606</code></pre>
 <p>The selected model is the one with the complexity parameter of 0.022, with an accuracy on the training set of 0.51. The model accuracy on the validating set is 0.53, which is lower than the accuracy of the basic model.</p>
 <p>The confusion matrix is:</p>
-<table>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="right">A</th>
-<th align="right">B</th>
-<th align="right">C</th>
-<th align="right">D</th>
-<th align="right">E</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">A</td>
-<td align="right">652</td>
-<td align="right">139</td>
-<td align="right">325</td>
-<td align="right">0</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">B</td>
-<td align="right">135</td>
-<td align="right">205</td>
-<td align="right">419</td>
-<td align="right">0</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">C</td>
-<td align="right">0</td>
-<td align="right">41</td>
-<td align="right">639</td>
-<td align="right">0</td>
-<td align="right">4</td>
-</tr>
-<tr class="even">
-<td align="left">D</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">351</td>
-<td align="right">0</td>
-<td align="right">292</td>
-</tr>
-<tr class="odd">
-<td align="left">E</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">140</td>
-<td align="right">0</td>
-<td align="right">581</td>
-</tr>
-</tbody>
-</table>
+<pre><code>##           Reference
+## Prediction   A   B   C   D   E
+##          A 652 139 325   0   0
+##          B 135 205 419   0   0
+##          C   0  41 639   0   4
+##          D   0   0 351   0 292
+##          E   0   0 140   0 581</code></pre>
 <p>Apparently the model is not able to identify class D.</p>
 </div>
 <div id="c.-repeated-cross-validation" class="section level3">
@@ -2373,338 +2216,63 @@ fit.ctr &lt;- train(classe ~ . , method = &quot;rpart&quot;,
 pred.ctr &lt;- predict(fit.ctr, validating[, feats])
 conf.ctr &lt;- confusionMatrix(validating$classe, pred.ctr)</code></pre>
 <p>The training results are:</p>
-<table>
-<thead>
-<tr class="header">
-<th align="right">cp</th>
-<th align="right">Accuracy</th>
-<th align="right">Kappa</th>
-<th align="right">AccuracySD</th>
-<th align="right">KappaSD</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">0.000</td>
-<td align="right">0.9855888</td>
-<td align="right">0.9817713</td>
-<td align="right">0.0040105</td>
-<td align="right">0.0050726</td>
-</tr>
-<tr class="even">
-<td align="right">0.005</td>
-<td align="right">0.9350287</td>
-<td align="right">0.9178588</td>
-<td align="right">0.0099837</td>
-<td align="right">0.0126441</td>
-</tr>
-<tr class="odd">
-<td align="right">0.010</td>
-<td align="right">0.8908078</td>
-<td align="right">0.8620807</td>
-<td align="right">0.0335246</td>
-<td align="right">0.0422989</td>
-</tr>
-<tr class="even">
-<td align="right">0.015</td>
-<td align="right">0.8483703</td>
-<td align="right">0.8087266</td>
-<td align="right">0.0352676</td>
-<td align="right">0.0442310</td>
-</tr>
-<tr class="odd">
-<td align="right">0.020</td>
-<td align="right">0.8111718</td>
-<td align="right">0.7616901</td>
-<td align="right">0.0332623</td>
-<td align="right">0.0421061</td>
-</tr>
-<tr class="even">
-<td align="right">0.025</td>
-<td align="right">0.7697219</td>
-<td align="right">0.7088150</td>
-<td align="right">0.0514735</td>
-<td align="right">0.0648962</td>
-</tr>
-<tr class="odd">
-<td align="right">0.030</td>
-<td align="right">0.6735819</td>
-<td align="right">0.5884101</td>
-<td align="right">0.0386730</td>
-<td align="right">0.0488721</td>
-</tr>
-<tr class="even">
-<td align="right">0.035</td>
-<td align="right">0.5213502</td>
-<td align="right">0.3665864</td>
-<td align="right">0.1327544</td>
-<td align="right">0.2049684</td>
-</tr>
-<tr class="odd">
-<td align="right">0.040</td>
-<td align="right">0.4665286</td>
-<td align="right">0.2895356</td>
-<td align="right">0.1032816</td>
-<td align="right">0.1685301</td>
-</tr>
-<tr class="even">
-<td align="right">0.045</td>
-<td align="right">0.4044306</td>
-<td align="right">0.1901884</td>
-<td align="right">0.0763134</td>
-<td align="right">0.1277719</td>
-</tr>
-<tr class="odd">
-<td align="right">0.050</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="even">
-<td align="right">0.055</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="odd">
-<td align="right">0.060</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="even">
-<td align="right">0.065</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="odd">
-<td align="right">0.070</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="even">
-<td align="right">0.075</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="odd">
-<td align="right">0.080</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="even">
-<td align="right">0.085</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="odd">
-<td align="right">0.090</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="even">
-<td align="right">0.095</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-<tr class="odd">
-<td align="right">0.100</td>
-<td align="right">0.3660103</td>
-<td align="right">0.1243353</td>
-<td align="right">0.0037912</td>
-<td align="right">0.0057057</td>
-</tr>
-</tbody>
-</table>
+<pre><code>##       cp  Accuracy     Kappa  AccuracySD     KappaSD
+## 1  0.000 0.9855888 0.9817713 0.004010523 0.005072592
+## 2  0.005 0.9350287 0.9178588 0.009983745 0.012644075
+## 3  0.010 0.8908078 0.8620807 0.033524596 0.042298873
+## 4  0.015 0.8483703 0.8087266 0.035267599 0.044230977
+## 5  0.020 0.8111718 0.7616901 0.033262306 0.042106106
+## 6  0.025 0.7697219 0.7088150 0.051473524 0.064896206
+## 7  0.030 0.6735819 0.5884101 0.038673038 0.048872063
+## 8  0.035 0.5213502 0.3665864 0.132754367 0.204968436
+## 9  0.040 0.4665286 0.2895356 0.103281554 0.168530068
+## 10 0.045 0.4044306 0.1901884 0.076313423 0.127771867
+## 11 0.050 0.3660103 0.1243353 0.003791158 0.005705703
+## 12 0.055 0.3660103 0.1243353 0.003791158 0.005705703
+## 13 0.060 0.3660103 0.1243353 0.003791158 0.005705703
+## 14 0.065 0.3660103 0.1243353 0.003791158 0.005705703
+## 15 0.070 0.3660103 0.1243353 0.003791158 0.005705703
+## 16 0.075 0.3660103 0.1243353 0.003791158 0.005705703
+## 17 0.080 0.3660103 0.1243353 0.003791158 0.005705703
+## 18 0.085 0.3660103 0.1243353 0.003791158 0.005705703
+## 19 0.090 0.3660103 0.1243353 0.003791158 0.005705703
+## 20 0.095 0.3660103 0.1243353 0.003791158 0.005705703
+## 21 0.100 0.3660103 0.1243353 0.003791158 0.005705703</code></pre>
 <p>The selected model is the one with the complexity parameter of 0, with an accuracy on the training set of 0.986. The model accuracy on the validating set is 0.99, which is very good (suspiciously good, dare I say).</p>
 <p>The confusion matrix shows that all classes are very well predicted:</p>
-<table>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="right">A</th>
-<th align="right">B</th>
-<th align="right">C</th>
-<th align="right">D</th>
-<th align="right">E</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">A</td>
-<td align="right">1115</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">B</td>
-<td align="right">6</td>
-<td align="right">750</td>
-<td align="right">3</td>
-<td align="right">0</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">C</td>
-<td align="right">0</td>
-<td align="right">3</td>
-<td align="right">676</td>
-<td align="right">3</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td align="left">D</td>
-<td align="right">0</td>
-<td align="right">4</td>
-<td align="right">1</td>
-<td align="right">632</td>
-<td align="right">6</td>
-</tr>
-<tr class="odd">
-<td align="left">E</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">4</td>
-<td align="right">717</td>
-</tr>
-</tbody>
-</table>
+<pre><code>##           Reference
+## Prediction    A    B    C    D    E
+##          A 1115    1    0    0    0
+##          B    6  750    3    0    0
+##          C    0    3  676    3    2
+##          D    0    4    1  632    6
+##          E    0    0    0    4  717</code></pre>
 </div>
 </div>
 <div id="testing-conclusion" class="section level2">
 <h2>4. Testing &amp; Conclusion:</h2>
 <p>The results of the testing are the following:</p>
-<table>
-<thead>
-<tr class="header">
-<th align="left">basic</th>
-<th align="left">pca</th>
-<th align="left">control</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">D</td>
-<td align="left">C</td>
-<td align="left">B</td>
-</tr>
-<tr class="even">
-<td align="left">C</td>
-<td align="left">C</td>
-<td align="left">A</td>
-</tr>
-<tr class="odd">
-<td align="left">C</td>
-<td align="left">C</td>
-<td align="left">B</td>
-</tr>
-<tr class="even">
-<td align="left">A</td>
-<td align="left">A</td>
-<td align="left">A</td>
-</tr>
-<tr class="odd">
-<td align="left">A</td>
-<td align="left">A</td>
-<td align="left">A</td>
-</tr>
-<tr class="even">
-<td align="left">D</td>
-<td align="left">E</td>
-<td align="left">E</td>
-</tr>
-<tr class="odd">
-<td align="left">D</td>
-<td align="left">E</td>
-<td align="left">D</td>
-</tr>
-<tr class="even">
-<td align="left">C</td>
-<td align="left">C</td>
-<td align="left">B</td>
-</tr>
-<tr class="odd">
-<td align="left">A</td>
-<td align="left">B</td>
-<td align="left">A</td>
-</tr>
-<tr class="even">
-<td align="left">A</td>
-<td align="left">A</td>
-<td align="left">A</td>
-</tr>
-<tr class="odd">
-<td align="left">B</td>
-<td align="left">B</td>
-<td align="left">B</td>
-</tr>
-<tr class="even">
-<td align="left">C</td>
-<td align="left">C</td>
-<td align="left">C</td>
-</tr>
-<tr class="odd">
-<td align="left">B</td>
-<td align="left">C</td>
-<td align="left">B</td>
-</tr>
-<tr class="even">
-<td align="left">A</td>
-<td align="left">A</td>
-<td align="left">A</td>
-</tr>
-<tr class="odd">
-<td align="left">D</td>
-<td align="left">E</td>
-<td align="left">E</td>
-</tr>
-<tr class="even">
-<td align="left">D</td>
-<td align="left">E</td>
-<td align="left">E</td>
-</tr>
-<tr class="odd">
-<td align="left">D</td>
-<td align="left">C</td>
-<td align="left">A</td>
-</tr>
-<tr class="even">
-<td align="left">B</td>
-<td align="left">B</td>
-<td align="left">B</td>
-</tr>
-<tr class="odd">
-<td align="left">D</td>
-<td align="left">C</td>
-<td align="left">B</td>
-</tr>
-<tr class="even">
-<td align="left">B</td>
-<td align="left">C</td>
-<td align="left">B</td>
-</tr>
-</tbody>
-</table>
+<pre><code>##    basic pca control
+## 1      D   C       B
+## 2      C   C       A
+## 3      C   C       B
+## 4      A   A       A
+## 5      A   A       A
+## 6      D   E       E
+## 7      D   E       D
+## 8      C   C       B
+## 9      A   B       A
+## 10     A   A       A
+## 11     B   B       B
+## 12     C   C       C
+## 13     B   C       B
+## 14     A   A       A
+## 15     D   E       E
+## 16     D   E       E
+## 17     D   C       A
+## 18     B   B       B
+## 19     D   C       B
+## 20     B   C       B</code></pre>
 <p>Applying the results of the <strong>control</strong> column yields 100% correct results on the project quizz.</p>
 </div>
 

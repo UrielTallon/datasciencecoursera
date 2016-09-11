@@ -22,15 +22,9 @@ The class A corresponds to the specific execution of the exercise while the othe
 
 The following libraries will be loaded:
 
-* __ggplot2:__ for plotting.
-
 * __knitr:__ for fancy tables.
 
-* __dplyr:__ for dataframe manipulation.
-
 * __caret & rpart:__ for data partition, model training and decision trees.
-
-* __rattle & rpart.plot:__ for decision trees plotting.
 
 
 
@@ -122,22 +116,25 @@ conf.bas <- confusionMatrix(validating$classe, pred.bas)
 The default model uses bootstrap with 25 repetitions. The results are:
 
 
-        cp    Accuracy       Kappa   AccuracySD     KappaSD
-----------  ----------  ----------  -----------  ----------
- 0.0336894   0.6438081   0.5488086    0.0526564   0.0658038
- 0.0344163   0.6278765   0.5256515    0.0756501   0.1056824
- 0.1141077   0.3262640   0.0636690    0.0423639   0.0625045
+```
+##           cp  Accuracy      Kappa AccuracySD    KappaSD
+## 1 0.03368936 0.6438081 0.54880856 0.05265641 0.06580384
+## 2 0.03441626 0.6278765 0.52565154 0.07565012 0.10568242
+## 3 0.11410770 0.3262640 0.06366904 0.04236393 0.06250448
+```
 
 The selected model is the one with the complexity parameter of 0.034, with an accuracy on the training set of 0.644. The model accuracy on the validating set is 0.63, which is not bad for a first try. A quick look on the confusion matrix can give an idea of the different mismatch:
 
 
-        A     B     C     D     E
----  ----  ----  ----  ----  ----
-A     842    67    59   146     2
-B     193   322   123   121     0
-C      11     7   381   285     0
-D      40     0    21   582     0
-E       4     0    41   339   337
+```
+##           Reference
+## Prediction   A   B   C   D   E
+##          A 842  67  59 146   2
+##          B 193 322 123 121   0
+##          C  11   7 381 285   0
+##          D  40   0  21 582   0
+##          E   4   0  41 339 337
+```
 
 There are a few mismatche in class A and C. B and E are predicted with little inaccuracy. On the other hand, class D is really messy.
 
@@ -158,24 +155,27 @@ conf.pca <- confusionMatrix(validating$classe, pred.pca)
 The PCA gives 13 components required to capture 80% of the variance. The model fitting still uses bootstrap with 25 repetitions. The results are:
 
 
-        cp    Accuracy       Kappa   AccuracySD     KappaSD
-----------  ----------  ----------  -----------  ----------
- 0.0221851   0.5100774   0.3559937    0.1455169   0.2292029
- 0.0228749   0.5047779   0.3494546    0.1425280   0.2254135
- 0.0257677   0.4016407   0.1936239    0.1382167   0.2254606
+```
+##           cp  Accuracy     Kappa AccuracySD   KappaSD
+## 1 0.02218514 0.5100774 0.3559937  0.1455169 0.2292029
+## 2 0.02287494 0.5047779 0.3494546  0.1425280 0.2254135
+## 3 0.02576769 0.4016407 0.1936239  0.1382167 0.2254606
+```
 
 The selected model is the one with the complexity parameter of 0.022, with an accuracy on the training set of 0.51. The model accuracy on the validating set is 0.53, which is lower than the accuracy of the basic model.
 
 The confusion matrix is:
 
 
-        A     B     C    D     E
----  ----  ----  ----  ---  ----
-A     652   139   325    0     0
-B     135   205   419    0     0
-C       0    41   639    0     4
-D       0     0   351    0   292
-E       0     0   140    0   581
+```
+##           Reference
+## Prediction   A   B   C   D   E
+##          A 652 139 325   0   0
+##          B 135 205 419   0   0
+##          C   0  41 639   0   4
+##          D   0   0 351   0 292
+##          E   0   0 140   0 581
+```
 
 Apparently the model is not able to identify class D.
 
@@ -197,69 +197,73 @@ conf.ctr <- confusionMatrix(validating$classe, pred.ctr)
 The training results are:
 
 
-    cp    Accuracy       Kappa   AccuracySD     KappaSD
-------  ----------  ----------  -----------  ----------
- 0.000   0.9855888   0.9817713    0.0040105   0.0050726
- 0.005   0.9350287   0.9178588    0.0099837   0.0126441
- 0.010   0.8908078   0.8620807    0.0335246   0.0422989
- 0.015   0.8483703   0.8087266    0.0352676   0.0442310
- 0.020   0.8111718   0.7616901    0.0332623   0.0421061
- 0.025   0.7697219   0.7088150    0.0514735   0.0648962
- 0.030   0.6735819   0.5884101    0.0386730   0.0488721
- 0.035   0.5213502   0.3665864    0.1327544   0.2049684
- 0.040   0.4665286   0.2895356    0.1032816   0.1685301
- 0.045   0.4044306   0.1901884    0.0763134   0.1277719
- 0.050   0.3660103   0.1243353    0.0037912   0.0057057
- 0.055   0.3660103   0.1243353    0.0037912   0.0057057
- 0.060   0.3660103   0.1243353    0.0037912   0.0057057
- 0.065   0.3660103   0.1243353    0.0037912   0.0057057
- 0.070   0.3660103   0.1243353    0.0037912   0.0057057
- 0.075   0.3660103   0.1243353    0.0037912   0.0057057
- 0.080   0.3660103   0.1243353    0.0037912   0.0057057
- 0.085   0.3660103   0.1243353    0.0037912   0.0057057
- 0.090   0.3660103   0.1243353    0.0037912   0.0057057
- 0.095   0.3660103   0.1243353    0.0037912   0.0057057
- 0.100   0.3660103   0.1243353    0.0037912   0.0057057
+```
+##       cp  Accuracy     Kappa  AccuracySD     KappaSD
+## 1  0.000 0.9855888 0.9817713 0.004010523 0.005072592
+## 2  0.005 0.9350287 0.9178588 0.009983745 0.012644075
+## 3  0.010 0.8908078 0.8620807 0.033524596 0.042298873
+## 4  0.015 0.8483703 0.8087266 0.035267599 0.044230977
+## 5  0.020 0.8111718 0.7616901 0.033262306 0.042106106
+## 6  0.025 0.7697219 0.7088150 0.051473524 0.064896206
+## 7  0.030 0.6735819 0.5884101 0.038673038 0.048872063
+## 8  0.035 0.5213502 0.3665864 0.132754367 0.204968436
+## 9  0.040 0.4665286 0.2895356 0.103281554 0.168530068
+## 10 0.045 0.4044306 0.1901884 0.076313423 0.127771867
+## 11 0.050 0.3660103 0.1243353 0.003791158 0.005705703
+## 12 0.055 0.3660103 0.1243353 0.003791158 0.005705703
+## 13 0.060 0.3660103 0.1243353 0.003791158 0.005705703
+## 14 0.065 0.3660103 0.1243353 0.003791158 0.005705703
+## 15 0.070 0.3660103 0.1243353 0.003791158 0.005705703
+## 16 0.075 0.3660103 0.1243353 0.003791158 0.005705703
+## 17 0.080 0.3660103 0.1243353 0.003791158 0.005705703
+## 18 0.085 0.3660103 0.1243353 0.003791158 0.005705703
+## 19 0.090 0.3660103 0.1243353 0.003791158 0.005705703
+## 20 0.095 0.3660103 0.1243353 0.003791158 0.005705703
+## 21 0.100 0.3660103 0.1243353 0.003791158 0.005705703
+```
 
 The selected model is the one with the complexity parameter of 0, with an accuracy on the training set of 0.986. The model accuracy on the validating set is 0.99, which is very good (suspiciously good, dare I say).
 
 The confusion matrix shows that all classes are very well predicted:
 
 
-         A     B     C     D     E
----  -----  ----  ----  ----  ----
-A     1115     1     0     0     0
-B        6   750     3     0     0
-C        0     3   676     3     2
-D        0     4     1   632     6
-E        0     0     0     4   717
+```
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1115    1    0    0    0
+##          B    6  750    3    0    0
+##          C    0    3  676    3    2
+##          D    0    4    1  632    6
+##          E    0    0    0    4  717
+```
 
 ## 4. Testing & Conclusion:
 
 The results of the testing are the following:
 
 
-basic   pca   control 
-------  ----  --------
-D       C     B       
-C       C     A       
-C       C     B       
-A       A     A       
-A       A     A       
-D       E     E       
-D       E     D       
-C       C     B       
-A       B     A       
-A       A     A       
-B       B     B       
-C       C     C       
-B       C     B       
-A       A     A       
-D       E     E       
-D       E     E       
-D       C     A       
-B       B     B       
-D       C     B       
-B       C     B       
+```
+##    basic pca control
+## 1      D   C       B
+## 2      C   C       A
+## 3      C   C       B
+## 4      A   A       A
+## 5      A   A       A
+## 6      D   E       E
+## 7      D   E       D
+## 8      C   C       B
+## 9      A   B       A
+## 10     A   A       A
+## 11     B   B       B
+## 12     C   C       C
+## 13     B   C       B
+## 14     A   A       A
+## 15     D   E       E
+## 16     D   E       E
+## 17     D   C       A
+## 18     B   B       B
+## 19     D   C       B
+## 20     B   C       B
+```
 
 Applying the results of the __control__ column yields 100% correct results on the project quizz.
