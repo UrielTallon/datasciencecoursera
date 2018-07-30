@@ -1,0 +1,248 @@
+---
+title: "Reproducible Research: Fitness Data"
+output: 
+  html_document:
+    keep_md: true
+---
+
+The following report examines a set of data related to personal activity,
+collected through activity monitoring devices such as [Fitbit](http://www.fitbit.com), [Nike Fuelband](http://www.nike.com/us/en_us/c/nikeplus-fuelband) or [Jawbone Up](https://jawbone.com/up).
+
+The data consists in 2 months (October and November 2012) of personal data collected from an anonymous individual at 5 minute intervals throughout each day. They include the number of steps taken at 5 minutes intervals each day.
+
+## Loading and preprocessing the data
+
+We first load the dataset and examine a few first rows:
+
+```{r loaddata}
+data <- read.csv(unzip("../data/activity.zip"))
+head(data)
+file.remove("activity.csv")
+```
+
+The data frame `data` is our original data set. The observed variables are the following:
+
+* __steps:__ Number of steps taking in a 5-minute interval (missing values are recorded as `NA`)
+* __date:__ The date on which the measurement was taken (format is `YYYY-MM-DD`)
+* __interval:__ Identifier for the 5-minute interval in which measurement was taken
+
+At first, we won't take the missing values in account for our analysis, so we will remove them
+
+```{r preprodata}
+clean <- data[complete.cases(data),]
+head(clean)
+```
+
+Now, we can proceed with the analysis.
+
+## What is mean total number of steps taken per day?
+
+We will first realize a summarization of the data by summing the steps with respect to the day:
+
+```{r sumdata}
+agg <- aggregate(clean$steps, by = list(time = clean$date), FUN = sum)
+head(agg)
+```
+
+We have created a new dataframe with the variable `time` being the date of the day and `x` being the sum of all the steps taken during this very day.
+
+To plot, we will use the library **ggplot2**, so please make sure it is installed on your system (you can use the command `install.packages("ggplot2")`).
+
+```{r lib1}
+library(ggplot2)
+```
+
+We will now create a general view of this dataframe with a histogram:
+
+```{r sumplot, fig.height = 6, fig.width = 10}
+ggplot(agg, aes(time, x)) +
+  geom_bar(stat = "identity", fill = "blue", alpha = 0.5, width = 0.6) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  geom_text(aes(label = x, y = 10000), angle = 90, vjust = 0.4) +
+  labs(x = "day (YYYY-MM-DD)", y = "Total number of steps") +
+  ggtitle("Total Number of Steps per Day")
+```
+
+In the next code chunk, we will calculate both the mean and the median of the steps taken during those 2 months:
+
+```{r medmean}
+activity.mn <- round(mean(agg$x), 2)
+activity.md <- median(agg$x)
+```
+
+This yields the following values:
+
+* __Mean:__ `r activity.mn`
+* __Median:__ `r activity.md`
+
+We can see both values are actually very close, which means most of the activity is centered around the median and there isn't much skewness in the data (at least at first sight).
+
+We can add an new plot with the mean represented as an horizontal line:
+
+```{r regplot, fig.height = 6, fig.width = 10}
+ggplot(agg, aes(time, x)) +
+  geom_bar(stat = "identity", fill = "blue", alpha = 0.5, width = 0.6) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  geom_hline(aes(yintercept = activity.mn), linetype = "dashed") +
+  geom_text(aes(x = agg$time[25], y = activity.mn + 1000, label = paste("Mean:", activity.mn))) +
+  labs(x = "day (YYYY-MM-DD)", y = "Total number of steps") +
+  ggtitle("Total Number of Steps per Day")
+```
+
+## What is the average daily activity pattern?
+
+We will now perform a time series analysis, trying to determin which moment of the day yields the peak activity. For this, we will prepare a new dataset from the clean one, summarizing the steps with respect to the interval:
+
+```{r meandata}
+aggmn <- aggregate(clean$steps, by = list(moment = clean$interval), FUN = mean)
+head(aggmn)
+```
+
+This created a new set of data, with the `moment` variable being the 5-minute interval identifier and the `x` variable being the mean of the steps taken at this interval across all days.
+
+The next graph will plot the variable `x` against `moment`:
+
+```{r seriesplot, fig.height = 6, fig.width = 10}
+ggplot(aggmn, aes(moment, x)) +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  labs(x = "5-minute interval", y = "Average number of steps taken") +
+  ggtitle("Average Number of Steps Taken Across All Days per 5-minute Interval")
+```
+
+We can clearly see a peak within the interval `750 < x < 1000`. We can compute the max from the dataset:
+
+```{r maxact}
+activity.mx <- aggmn[aggmn$x == max(aggmn$x), 1]
+```
+
+This yields the value **`r activity.mx`**, which is the peak activity 5-minute interval in average.
+
+## Inputing missing values
+
+Now, we will have a look to the influence the missing values `NA` can have on the results. First, we will try to count how many missing values there are in the original dataset `data`.
+
+We will start by identifying which variable in the original dataset yields some missing values `NA`:
+
+* The variable __steps__ has some missing values: `r anyNA(data$steps)`
+* The variable __date__ has some missing values: `r anyNA(data$date)`
+* The variable __interval__ has some missing values: `r anyNA(data$interval)`
+
+According to the results, we will therefore calculate how many missing values there are in the vector `data$steps`:
+
+```{r nacheck}
+stepsNA <- sum(is.na(data$steps)) 
+```
+
+This yields a total of **`r stepsNA`** missing values.
+
+Following a simple strategy, we will fill in the missing data: all `NA` will be replaced by the average value across all day for the corresponding 5-minute interval (rounded to 2 decimal):
+
+```{r fillna}
+filled <- data
+filled$steps <- sapply(as.numeric(rownames(filled)), function(i){
+  if (is.na(filled[i, "steps"])) {
+    as.integer(aggmn[aggmn$moment == filled[i, "interval"], "x"])
+  }
+  else {
+    as.integer(filled[i, "steps"])
+  }
+})
+head(filled)
+```
+
+We can now create a new aggregate that sums the steps with respect to the day:
+
+```{r nadata}
+aggna <- aggregate(filled$steps, by = list(time = filled$date), FUN = sum)
+head(aggna)
+```
+
+And redo the histogram:
+
+```{r naplot, fig.height = 6, fig.width = 10}
+ggplot(aggna, aes(time, x)) +
+  geom_bar(stat = "identity", fill = "blue", alpha = 0.5, width = 0.6) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  geom_text(aes(label = x, y = 10000), angle = 90, vjust = 0.4) +
+  labs(x = "day (YYYY-MM-DD)", y = "Total number of steps") +
+  ggtitle("Total Number of Steps per Day")
+```
+
+Then, we can evaluate again the mean and median of the steps taken during those 2 months. This way, we can estimate how filling the missing values has influenced the results:
+
+```{r namedmean}
+activity.mn <- round(mean(aggna$x), 2)
+activity.md <- median(aggna$x)
+```
+
+This yields the following values:
+
+* __Mean:__ `r activity.mn`
+* __Median:__ `r activity.md`
+
+Apparently, filling the missing data has reduced both the mean (10766 without `NA`, 10750 with `NA` filled) and the median (10765 without `NA`, 10641 with `NA` filled).  
+This is directly linked to our filling strategy: before, the `NA` values made us suppressing whole days from the analysis; after the filling, those days are back with a total sum of steps of 10641, which 'pulls' the mean to a lower value. 
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+The last part of the analysis consists in finding possible differences in activity patterns between weekdays and weekends. We will work with the `filled` data set previously created.
+
+First, we will try to identify which of the days are weekdays:
+
+```{r iddays}
+daysvec <- c("Mon", "Tue", "Wed", "Thu", "Fri")
+daysdat <- filled
+daysdat$day <- sapply(daysdat$date, function(x){
+  temp <- as.Date(x, format = "%Y-%m-%d")
+  if (weekdays(temp, abbreviate = TRUE) %in% daysvec) {
+    paste("weekday")
+  }
+  else {
+    paste("weekend")
+  }
+})
+head(daysdat)
+```
+
+The new data set has an additional variable which is a factor of 2 levels:
+* __weekday__: if the day is in Monday to Friday
+* __weekend__: if the day is either a Saturday or a Sunday
+
+**NOTA: We assumed the days of the weekend are Saturdays and Sundays, some country may consider another definition, such as Fridays and Saturdays or only Sundays**
+
+Now, let's create a new aggregate of the average total steps with respect to both the 5-minute interval and the type of day:
+
+```{r weekata}
+aggdays <- aggregate(daysdat$steps, by = list(moment = daysdat$interval, day = daysdat$day), FUN = mean)
+head(aggdays)
+tail(aggdays)
+```
+
+Now, we create a panel plot showing the total average steps with respect to the 5-minute interval for both weekdays and weekends.
+
+
+```{r dayplot, fig.height = 6, fig.width = 10}
+ggplot(aggdays, aes(moment, x, color = factor(day))) +
+  geom_line() +
+  facet_grid(day ~ .) +
+  geom_smooth(method = "loess", linetype = "dashed", se = FALSE, color = "black") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5), strip.background = element_blank()) +
+  scale_colour_discrete(guide = FALSE) +
+  labs(x = "5-Minute Interval", y = "Average Total Number of Steps") +
+  ggtitle("Average of Total Number of Steps per 5-Minute Interval (weekdays or weekend)") +
+  geom_vline(aes(xintercept = aggdays[aggdays$x == max(aggdays$x), 1])) +
+  geom_vline(aes(xintercept = 1250), linetype = "dotdash", size = 1) +
+  geom_text(aes(label = "Morning", x = 500, y = 200)) +
+  geom_text(aes(label = "Afternoon", x = 1750, y = 200))
+```
+
+The dotdash line in the middle of the plot separates the day into 2 different parts that we arbitrarily call *Morning* for the first part and *Afternoon* for the second. The plot shows slight differences in tendencies:
+
+1. The beginning and end of the day is about the same, be it a weekday or a weekend day.
+2. The peak activity (solid vertical line on the plot) is still centered around the same time of the day (interval `835`), although it is relatively less intense during the weekends (around `160` steps against `225` steps for weekdays).
+3. A `loess` regression exhibs the following differences:
+  + During weekdays, most of the activity is centered on the morning, with a slight decrease afterwards, a short stabilization in the afternoon and another decrease in the evening.
+  + During weekends, the activity is apparently more centered in the beginning of the afternoon and the decrease in the evening is steeper.
+  
+This concludes the data analysis.

@@ -1,0 +1,183 @@
+---
+title: "Statistical Inference: Basic  Inferential Data Analysis"
+author: "Uriel Tallon"
+date: "Saturday, August 06, 2016"
+output: 
+  html_document:
+    keep_md: true
+---
+
+## 1. Context
+
+The following report is part of a required peer-reviewed assessment from the _Statistical Inference_ course, one of the ten courses from the __Coursera Data Science Specialty__ from Johns Hopkins University.
+
+The purpose of this report is perform some basic inferential data analysis on an actual dataset, namely the `ToothGrowth` dataset which is provided with R. The different parts of the analysis are:
+
+* Some exploratory data analysis.
+
+* Basic summary of the data.
+
+* Hypothesis testing.
+
+* Conclusion.
+
+Plotting will be done with the library `ggplot2`.
+
+```{r loadlibs, warning = FALSE, message = FALSE, echo = FALSE}
+for (pck in c("ggplot2", "knitr", "dplyr")) {
+  if (!require(pck, character.only = TRUE)) {
+    install.packages(pck)
+    library(pck, character.only = TRUE)
+  }
+}
+```
+
+## 2. Load and Explore:
+
+The dataset we are goin to analyze is the `ToothGrowth` dataset.
+
+```{r loadata, echo = FALSE}
+data("ToothGrowth")
+kable(head(ToothGrowth))
+```
+
+The data provides some measurement of the length of the odontoblasts (cells responsible for tooth growth) in 60 different guinea pigs whose diet has been supplemented with vitamin C through 2 different methods:
+
+* Orange juice (reported as `OJ` in the dataset)
+
+* Ascorbic acid (reported as `VC` in the dataset)
+
+For each supplement, various doses have been used (0.5, 1 and 2 mg/day, 10 observations for each dose).
+
+First, let's plot the length vs. the dose, without considering the delivery method:
+
+```{r plotlen, fig.height = 3, fig.width = 5, echo = FALSE}
+ggplot(ToothGrowth, aes(dose, len)) +
+  geom_point(size = 1.5, alpha = 0.7, color = 'coral') +
+  ggtitle('Odontoblasts Length Vs. Supplement Dose') +
+  labs(x = 'Supplement Dose', y = "Odontoblasts Length")
+```
+
+Then try to distinguish between the different delivery methods:
+
+```{r plotdeliv, fig.height = 3, fig.width = 5, echo = FALSE}
+ggplot(ToothGrowth, aes(dose, len, color = factor(supp))) +
+  geom_point(size = 1.5, alpha = 0.7) +
+  facet_grid(. ~ supp) +
+  scale_colour_discrete(name = 'Delivery Method') +
+  ggtitle('Odontoblasts Length Vs. Supplement Dose\n(for delivery methods)') +
+  labs(x = 'Supplement Dose', y = "Odontoblasts Length")
+```
+
+The dispersion of the length for the `VC` delivery method seems higher, but it's hard to say if it is significant. Let's look at an equivalent boxplot:
+
+```{r plotbox, fig.height = 3, fig.width = 5, echo = FALSE}
+ggplot(ToothGrowth, aes(factor(supp), len)) +
+  geom_boxplot(aes(fill = factor(supp))) +
+  scale_fill_discrete(name = 'Delivery Method') +
+  labs(x = 'Delivery Method', y = 'Odontoblasts Length') +
+  ggtitle('Boxplot of Odontoblasts Length with Respect to Delivery Method')
+```
+
+So the median of the `OJ` delivery method is slightly higher than the `VC` method. However, the `VC` method values are much more spread. What about if we consider only the dose:
+
+```{r plotboxdose, fig.height = 3, fig.width = 5, echo = FALSE}
+ggplot(ToothGrowth, aes(factor(dose), len)) +
+  geom_boxplot(aes(fill = factor(dose))) +
+  scale_fill_discrete(name = 'Supplement Dose') +
+  labs(x = 'Supplement Dose', y = 'Odontoblasts Length') +
+  ggtitle('Boxplot of Odontoblasts Length with Respect to Supplement Dose')
+```
+
+According to this last plot, it looks like the variance in the length is more correlated with the dose of the supplement than with its delivery method, especially if the delivered dose is equal to or higher than 1mg/day.
+
+## 3. Data Summary:
+
+A brief data summary of some of the data statistics, including the mean $\mu$ and variance $\sigma^2$.
+
+```{r sum, echo = FALSE}
+mn.oj <- round(mean(ToothGrowth[ToothGrowth$supp == 'OJ', ]$len), 3)
+mn.vc <- round(mean(ToothGrowth[ToothGrowth$supp == 'VC', ]$len), 3)
+vr.oj <- round(var(ToothGrowth[ToothGrowth$supp == 'OJ', ]$len), 3)
+vr.vc <- round(var(ToothGrowth[ToothGrowth$supp == 'VC', ]$len), 3)
+mn.low <- round(mean(ToothGrowth[ToothGrowth$dose < 1.0, ]$len), 3)
+mn.hig <- round(mean(ToothGrowth[ToothGrowth$dose >= 1.0, ]$len), 3)
+vr.low <- round(var(ToothGrowth[ToothGrowth$dose < 1.0, ]$len), 3)
+vr.hig <- round(var(ToothGrowth[ToothGrowth$dose >= 1.0, ]$len), 3)
+```
+
+| ITEM        | Orange Juice  | Ascorbic Acide  | $dose < 1.0$  | $dose \geq 1.0$ |
+|-------------|---------------|-----------------|---------------|-----------------|
+| $\mu$       | `r mn.oj`     | `r mn.vc`       | `r mn.low`    | `r mn.hig`      |
+| $\sigma^2$  | `r vr.oj`     | `r vr.vc`       | `r vr.low`    | `r vr.hig`      |
+
+As we can see, the variances for the delivery method are not equal; however, they are closer to each other when considering only low dose and high dose.
+
+## 4. Test for Delivery Method
+
+```{r testingdeliv, echo = FALSE}
+dat.oj <- ToothGrowth[ToothGrowth$supp == 'OJ', ]$len
+dat.vc <- ToothGrowth[ToothGrowth$supp == 'VC', ]$len
+var.diff <- sqrt(vr.oj/30 + vr.vc/30)
+undf <- var.diff^2 / ((vr.oj/30)^2 / 29 + (vr.vc/30)^2 / 29)
+tsupp <- t.test(dat.oj, dat.vc)
+```
+
+We will now perform a T test to check if there is a significant difference between the 2 delivery methods. The sample sizes are equal (30 for both methods). The variance however is different. The t statistic can be computed as:
+
+$$
+\frac{\bar{X}_1 - \bar{X}_2}{\sqrt{\frac{\sigma^2_1 + \sigma^2_2}{n}}}
+$$
+
+With $\bar{X}_1$ (respectively $\bar{X}_2$) being the mean of the length when the delivery method is through orange juice (respectively ascorbic acid).
+
+And the degree of freedom can be computed as:
+
+$$
+\frac{\left(\frac{\sigma^2_1}{n_1} + \frac{\sigma^2_2}{n_2}\right)^2}
+{\left(\frac{\sigma^2_1}{n_1}\right)^2 / (n_1 - 1) + \left(\frac{\sigma^2_1}{n_2}\right)^2 / (n_2 - 1)}
+$$
+
+With $\sigma_1$ (respectively $\sigma_2$) being the standard deviation of the length when the delivery method is through orange juice (respectively ascorbic acid).
+
+The following table gives a summary of the results:
+
+| ITEM                    | results                         |
+|-------------------------|---------------------------------|
+| T stat.                 | `r tsupp$statistic`             |
+| p-value                 | `r tsupp$p.value`               |
+| Confidence int. (lower) | `r tsupp$conf.int[1]`           |
+| Confidence int. (upper) | `r tsupp$conf.int[2]`           |
+
+As we can see, the p-value is higher than $\alpha = 0.05$. Consequently, there is no significant difference between the 2 delivery methods.
+
+## 5. Test For Dose
+
+Now that we've seen the difference in delivery method is not statistically significant, let's see if the dose is. For the purpose of this test, we have divided the dataset between low doses (lower than 1.0mg/day) and high dose (higher than or equal to 1.0mg/day).
+
+```{r testingdose, echo = FALSE}
+dat.low <- ToothGrowth[ToothGrowth$dose < 1.0, ]$len
+dat.hig <- ToothGrowth[ToothGrowth$dose >= 1.0, ]$len
+n.low <- length(dat.low)
+n.hig <- length(dat.hig)
+var.diff <- sqrt(vr.low/n.low + vr.hig/n.hig)
+undf <- var.diff^2 / ((vr.low/n.low)^2 / (n.low - 1) + (vr.hig/n.hig)^2 / (n.hig - 1))
+tdose <- t.test(dat.low, dat.hig)
+```
+
+The following table provides the results of the test:
+
+| ITEM                    | results                         |
+|-------------------------|---------------------------------|
+| T stat.                 | `r tdose$statistic`             |
+| p-value                 | `r tdose$p.value`               |
+| Confidence int. (lower) | `r tdose$conf.int[1]`           |
+| Confidence int. (upper) | `r tdose$conf.int[2]`           |
+
+The p-value here is extremely small so we can assume the difference in delivery is statistically significant.
+
+Moreover, with 95% confidence we can state that the mean of the odontoblasts' length with a dose lower than 1.0mg/day is somewhat `r abs(round(tdose$conf.int[2]))` to `r abs(round(tdose$conf.int[1]))` less than the mean of the length with a delivery dose higher than or equal to 1.0mg/day.
+
+## 6. Conclusion
+
+Using some basic statistical inference techniques, we were able to determine the significance of 2 different variables for a particular dataset. Here, we were able to determine that there is no statistically significant differences between the delivery method of vitamin C (orange juice or ascorbic acide). However there is a statistically significant difference when it comes to the delivery dose, particularly if it is higher than or equal to 1.0mg/day.

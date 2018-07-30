@@ -1,0 +1,49 @@
+---
+title: "R Markdown & Plotly"
+author: "Uriel Tallon"
+date: "October 20, 2016"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Simple Plotly Graph
+
+```{r, warning = FALSE, message = FALSE}
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(plotly)
+dat <- read.csv("../data/winewithnames.csv")
+```
+
+```{r, fig.align = 'center', warning = FALSE}
+plot_ly(x = dat$flavonoids, y = dat$proline, color = factor(dat$cultivar), type = "scatter", mode = "markers") %>% layout(title = "Flavonoids vs. Proline (for 3 Different Wine Cultivars)", xaxis = list(title = "Flavonoids"), yaxis = list(title = "Proline"))
+```
+
+## Combining ggplot & plotly
+
+```{r, fig.align = 'center', warning = FALSE}
+corrm <- round(cor(dat), 4)
+corrm[upper.tri(corrm)] <- NA
+corrm <- melt(corrm, na.rm = TRUE)
+p <- ggplot(corrm, aes(Var1, Var2, fill = value)) +
+      geom_tile(color = "white") +
+      scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0,
+                           limit = c(-1, 1), name = "Pearson\nCorrelation") +
+      theme_bw() +
+      theme(axis.title = element_blank(), axis.ticks = element_blank()) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      theme(panel.border = element_blank()) +
+      ggtitle("Correlation Matrix")
+ggplotly(p)
+```
+
+***
+Thank you!
+
+The dataset comes from the University of [California Irvine Machine LearningRepository](http://archive.ics.uci.edu/ml/datasets/Wine). Please note the original dataset does not have any header.
+
+Please check [this ressource](http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization) for gorgeous correlation matrices using `ggplot`.

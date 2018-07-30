@@ -1,0 +1,197 @@
+---
+title: "Practical Machine Learning: Human Activity Recognition"
+author: "Uriel Tallon"
+date: "Saturday, September 10, 2016"
+output: 
+  html_document:
+    keep_md: true
+---
+
+## 1. Context:
+
+The following report is part of a required peer-reviewed assessment from the _Practical Machine Learning_ course, one of the ten courses from the __Coursera Data Science Specialty__ offered by Johns Hopkins University.
+
+The report deals with the analysis of a particular dataset coming from [this source](http://groupware.les.inf.puc-rio.br/har) about Human Activity Recognition (HAR) but with a twist: most of the works on the subject deal with the identification of a particular task while this one focus on how well a task is performed. 
+
+Six young health participants have been asked to perform one set of 10 repetitions of the unilateral dumbbell biceps curl in five different fashions which are the classes to predict:
+
+| Classe  | Description                                           |
+|---------|-------------------------------------------------------|
+| __A__   | Exactly according to the specification                |
+| __B__   | Throwing the elbows to the front                      |
+| __C__   | Lifting the dubbell only halfway                      |
+| __D__   | Lowering the dumbbell only halfway                    |
+| __E__   | Throwing the hips to the front                        |
+
+The class A corresponds to the specific execution of the exercise while the other 4 classes correspond to common mistakes. We will try to build a robust predction model that will predict the class of 20 different provided test cases.
+
+The following libraries will be loaded:
+
+* __knitr:__ for fancy tables.
+
+* __caret & rpart:__ for data partition, model training and decision trees.
+
+```{r loadlibs, warning = FALSE, message = FALSE, echo = FALSE}
+for (pck in c("knitr", "caret", "rpart")) {
+  if (!require(pck, character.only = TRUE)) {
+    install.packages(pck)
+    library(pck, character.only = TRUE)
+  }
+}
+```
+
+## 2. Data Loading & Training:
+
+We will load both the full dataset and the 20 test cases to predict.
+
+```{r loaddat, cache = TRUE}
+raw <- read.csv("../data/pml-training.csv")
+testing <- read.csv("../data/pml-testing.csv")
+```
+
+The raw dataset looks like this.
+
+```{r view_raw, echo = FALSE}
+kable(head(raw, 5))
+```
+
+At first glance, we can see there are a lot of features that are either not used or undefined. We can compare with the testing dataset:
+
+```{r view_testing, echo = FALSE}
+kable(head(testing, 5))
+```
+
+Therefore, we will keep only the features that hold defined values in both datasets. The undefined or unfilled features will be dropped. The classes to be predicted are under the _classe_ label:
+
+```{r featsel}
+feats <- c("user_name", "raw_timestamp_part_1", "raw_timestamp_part_2",
+           "cvtd_timestamp", "new_window", "num_window", "roll_belt", "pitch_belt",
+           "yaw_belt", "total_accel_belt", "gyros_belt_x", "gyros_belt_y",
+           "gyros_belt_z", "accel_belt_x", "accel_belt_y", "accel_belt_z",
+           "magnet_belt_x", "magnet_belt_y", "magnet_belt_z", "roll_arm",
+           "pitch_arm", "yaw_arm", "total_accel_arm", "gyros_arm_x", "gyros_arm_y",
+           "gyros_arm_z", "accel_arm_x", "accel_arm_y", "accel_arm_z","magnet_arm_x",
+           "magnet_arm_y", "magnet_arm_z", "roll_dumbbell","pitch_dumbbell",
+           "yaw_dumbbell", "total_accel_dumbbell", "gyros_dumbbell_x",
+           "gyros_dumbbell_y", "gyros_dumbbell_z", "accel_dumbbell_x",
+           "accel_dumbbell_y", "accel_dumbbell_z", "magnet_dumbbell_x",
+           "magnet_dumbbell_y", "magnet_dumbbell_z", "roll_forearm", "pitch_forearm",
+           "yaw_forearm", "gyros_forearm_x", "gyros_forearm_y", "gyros_forearm_z",
+           "accel_forearm_x", "accel_forearm_y", "accel_forearm_z", "magnet_forearm_x",
+           "magnet_forearm_y", "magnet_forearm_z")
+outcome <- c("classe")
+```
+
+That's a total of `r length(feats)` features.
+
+## 3. Models Training & Validation:
+
+The first step is to split the raw dataset between training and validation set. The data will be split as following:
+
+* 80% for the training set
+
+* 20% for the validation set
+
+```{r traintestsplit}
+set.seed(342)
+trainIdx <- createDataPartition(raw$classe, p = 0.8 ,list = FALSE)
+training <- raw[trainIdx,]
+training <- training[, c(outcome, feats)]
+validating <- raw[-trainIdx,]
+testing <- testing[, c(feats)]
+```
+
+### a. Basic Decision Tree:
+
+The first model will be a simple decision tree with default parameters: 
+
+```{r pred1}
+fit.bas <- train(classe ~ . , method = "rpart", data = training)
+pred.bas <- predict(fit.bas, validating[, feats])
+conf.bas <- confusionMatrix(validating$classe, pred.bas)
+```
+
+The default model uses bootstrap with 25 repetitions. The results are:
+
+```{r pred1_res, echo = FALSE}
+fit.bas$results
+```
+
+The selected model is the one with the complexity parameter of `r round(fit.bas$results[1,1], 3)`, with an accuracy on the training set of `r round(fit.bas$results[1, 2], 3)`. The model accuracy on the validating set is `r round(conf.bas$overall[1], 2)`, which is not bad for a first try. A quick look on the confusion matrix can give an idea of the different mismatch:
+
+```{r pred1_table, echo = FALSE}
+conf.bas$table
+```
+
+There are a few mismatche in class A and C. B and E are predicted with little inaccuracy. On the other hand, class D is really messy.
+
+### b. Principal Component Analysis:
+
+The second model will take advantage of principal component analysis, in order to reduce the number of features and possibly increase accuracy by reducing model complexity (thus preventing over-fitting). The parameters are set so that the PCA will determine the required number of components to capture 90% of the variance of the dataset:
+
+```{r pred2}
+proc.pca <- preProcess(training, method = "pca", outcome = training$classe, thresh = 0.8)
+pred.train <- predict(proc.pca, training)
+pred.test <- predict(proc.pca, validating[, c(outcome, feats)])
+fit.pca <- train(classe ~ . , method = "rpart", data = pred.train)
+pred.pca <- predict(fit.pca, pred.test)
+conf.pca <- confusionMatrix(validating$classe, pred.pca)
+```
+
+The PCA gives `r proc.pca$numComp` components required to capture 80% of the variance. The model fitting still uses bootstrap with 25 repetitions. The results are:
+
+```{r pred2_res, echo = FALSE}
+fit.pca$results
+```
+
+The selected model is the one with the complexity parameter of `r round(fit.pca$results[1,1], 3)`, with an accuracy on the training set of `r round(fit.pca$results[1, 2], 3)`. The model accuracy on the validating set is `r round(conf.pca$overall[1], 2)`, which is lower than the accuracy of the basic model.
+
+The confusion matrix is:
+
+```{r pred2_table, echo = FALSE}
+conf.pca$table
+```
+
+Apparently the model is not able to identify class D.
+
+### c. Repeated Cross-Validation:
+
+Now, let's try to get more control on the training process. The method used is a _repeated cross-validation_ with 10 folds and 4 repetitions. The research grid will look over the complexity parameter of the model, checking for values from 0 to 0.1 with an increment of 0.005.
+
+```{r pred3, cache = TRUE}
+ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 4, search = "grid")
+newgrid <- expand.grid(cp = seq(0, 0.1, 0.005))
+fit.ctr <- train(classe ~ . , method = "rpart",
+                 data = training, trControl = ctrl,
+                 tuneGrid = newgrid)
+pred.ctr <- predict(fit.ctr, validating[, feats])
+conf.ctr <- confusionMatrix(validating$classe, pred.ctr)
+```
+
+The training results are:
+
+```{r pred3_res, echo = FALSE}
+fit.ctr$results
+```
+
+The selected model is the one with the complexity parameter of `r round(fit.ctr$results[1,1], 3)`, with an accuracy on the training set of `r round(fit.ctr$results[1, 2], 3)`. The model accuracy on the validating set is `r round(conf.ctr$overall[1], 2)`, which is very good (suspiciously good, dare I say).
+
+The confusion matrix shows that all classes are very well predicted:
+
+```{r pred3_table, echo = FALSE}
+conf.ctr$table
+```
+
+## 4. Testing & Conclusion:
+
+The results of the testing are the following:
+
+```{r results, echo = FALSE}
+res.bas <- predict(fit.bas, testing[, feats])
+res.pca <- predict(fit.pca, predict(proc.pca, testing[, feats]))
+res.ctr <- predict(fit.ctr, testing[, feats])
+results <- data.frame(basic = res.bas, pca = res.pca, control = res.ctr)
+results
+```
+
+Applying the results of the __control__ column yields 100% correct results on the project quizz.

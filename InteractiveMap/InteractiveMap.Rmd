@@ -1,0 +1,104 @@
+---
+title: "Interactive Map"
+author: "Uriel Tallon"
+date: "Sunday, October 16, 2016"
+output: 
+  html_document:
+    keep_md: true
+---
+
+## 1. Context
+
+The following report is part of a required peer-reviewed assessment from the _Creating Data Product_ course, one of the ten courses from the __Coursera Data Science Specialty__ from Johns Hopkins University. It aims at creating a basic interactive map using the `leaflet` package.
+
+I extended on the work done during the _Reproducible Research_ course, which I have afterwards expanded with maps created using `ggplot2` along with the `rgeos` and `rgdal` packages.
+
+```{r loadlibs, warning = FALSE, message = FALSE, echo = FALSE}
+for (pck in c("knitr", "dplyr", "leaflet", "rgdal", "rgeos", "RColorBrewer")) {
+  if (!require(pck, character.only = TRUE)) {
+    install.packages(pck)
+    library(pck, character.only = TRUE)
+  }
+}
+```
+
+## 2. Map:
+
+The data used to add the markers come from the National Oceanic and Atmospheric Administration. It reports weather events from 1950 to 2011. The dataset has already been cleaned and reworked, keeping only the following variables:
+
+* The state abbreviation.
+
+* The latitude and longitude of each state center.
+
+* The historically most frequent weather event.
+
+* The number of occurrence for said weather event.
+
+Each marker will be positioned at the center of the state. A popup will appear on click, giving more information about the weather event for the specific state.
+
+```{r ld, echo = FALSE}
+mydata <- read.csv(file = "../data/clean.csv", stringsAsFactors = FALSE)
+mysumm <- read.csv(file = "../data/summary.csv", stringsAsFactors = FALSE)
+spaced <- readOGR(dsn = "../data/states_21basic", layer = "states", verbose = FALSE)
+spaced <- spaced[spaced@data$STATE_ABBR != "AK", ]
+spaced <- spaced[spaced@data$STATE_ABBR != "HI", ]
+```
+
+```{r mm, echo = FALSE}
+spaced <- merge(spaced, mysumm, by = "STATE_ABBR")
+pop1 <- paste("<div style = 'text-align:center; font-weight:bold'>",
+              spaced@data$STATE_NAME, "</div>", "<br>", "Most Frequent Event: ",
+              spaced@data$MOST_FREQ, "<br>", "Occurrence per Year: ", spaced@data$EV_AVG)
+pop2 <- paste("<div style = 'text-align:center; font-weight:bold'>",
+              spaced@data$STATE_NAME, "</div>", "<br>", "Most Harmful Event: ",
+              spaced@data$HARM, "<br>", "Average Injuries/Fatalities: ",
+              spaced@data$AVG_HARM_MAX)
+pop3 <- paste("<div style = 'text-align:center; font-weight:bold'>",
+              spaced@data$STATE_NAME, "</div>", "<br>", "Most destructive (crops): ",
+              spaced@data$CROP, "<br>", "Average cost (in 10e6 USD): ",
+              spaced@data$AVG_CROPDMG_MAX)
+pop4 <- paste("<div style = 'text-align:center; font-weight:bold'>",
+              spaced@data$STATE_NAME, "</div>", "<br>", "Most destructive (properties): ",
+              spaced@data$PROP, "<br>", "Average cost (in 10e6 USD): ",
+              spaced@data$AVG_PROPDMG_MAX)
+pal1 <- colorNumeric(palette = "Greens", domain = spaced@data$EV_AVG)
+pal2 <- colorNumeric(palette = "Reds", domain = spaced@data$AVG_HARM_MAX)
+pal3 <- colorNumeric(palette = "Oranges", domain = spaced@data$AVG_CROPDMG_MAX)
+pal4 <- colorNumeric(palette = "Blues", domain = spaced@data$AVG_PROPDMG_MAX)
+```
+
+```{r drawMap, echo = FALSE, fig.width = 10}
+myMap <- leaflet() %>% addTiles() %>% setView(lng = -98.5795, lat = 39.8282, zoom = 4)
+myMap <- myMap %>% addPolygons(data = spaced, weight = 0.4, 
+                               fillColor = ~pal1(EV_AVG), color = "black",
+                               fillOpacity = 0.3,
+                               group = "Most Frequent",
+                               popup = pop1)
+myMap <- myMap %>% addPolygons(data = spaced, weight = 0.2, color = "black",
+                               fillColor = ~pal2(AVG_HARM_MAX),
+                               fillOpacity = 0.3,
+                               group = "Most Harmful",
+                               popup = pop2)
+myMap <- myMap %>% addPolygons(data = spaced, weight = 0.2, color = "black",
+                               fillColor = ~pal3(AVG_CROPDMG_MAX),
+                               fillOpacity = 0.3,
+                               group = "Destructive (Crops)",
+                               popup = pop3)
+myMap <- myMap %>% addPolygons(data = spaced, weight = 0.2, color = "black",
+                               fillColor = ~pal4(AVG_PROPDMG_MAX),
+                               fillOpacity = 0.3,
+                               group = "Destructive (Properties)",
+                               popup = pop4)
+myMap <- myMap %>% addLayersControl(overlayGroups = c("Most Frequent",
+                                                      "Most Harmful",
+                                                      "Destructive (Crops)",
+                                                      "Destructive (Properties)"),
+                                    options = layersControlOptions(collapsed = FALSE))
+myMap
+```
+
+## 3. Session Info
+
+```{r session, echo = FALSE}
+sessionInfo()
+```
